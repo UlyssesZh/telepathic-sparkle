@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import io
 import os
@@ -16,7 +16,8 @@ import logging
 import re
 import http.server
 import socketserver
-import urllib
+import urllib.parse
+import urllib.request
 import hashlib
 
 def compactify(list_):
