@@ -58,7 +58,7 @@ class Bundle():
 		else:
 			with DZReader(self.cache_path) as dz:
 				dz.extract(self.unpack_to)
-	
+
 	def repack(self):
 		if self.keys:
 			writer = CZWriter(self.unpack_to, self.keys)
@@ -88,14 +88,14 @@ class Source():
 				with zip_ref.open(path, 'r') as file:
 					with open(dest, 'wb') as out_f:
 						out_f.write(file.read())
-	
+
 	def put(self, path, src):
 		if self.type == 'apk' or self.type == 'obb' or self.type == 'zip':
 			ensure_dir(self.temp_path)
 			with zipfile.ZipFile(self.temp_path, 'a') as zip_ref:
 				zip_ref.write(src, path)
 			self.dirty = True
-	
+
 	def finalize(self):
 		if not self.dirty:
 			return
@@ -157,18 +157,20 @@ class StandaloneBundle(Bundle, Source):
 		Bundle.__init__(self, name, path, self, unpack_to, options)
 		Source.__init__(self, name, path, target, 'standalone', options)
 		self.install_path = options['install_path']
-	
+
 	def create(self):
+		ensure_dir(self.cache_path)
 		shutil.copy(self.path, self.cache_path)
 
 	def put(self, *args):
 		self.dirty = True
-	
+
 	def finalize(self):
 		if not self.dirty:
 			return
+		ensure_dir(self.target)
 		shutil.copy(self.cache_path, self.target)
-	
+
 	def install(self, ignore_dirty=False):
 		if not self.dirty and not ignore_dirty:
 			adb_command = ['adb', 'shell', f'[ -e "{self.install_path}" ]']
@@ -192,7 +194,7 @@ class DZReader():
 
 		def __repr__(self):
 			return f"FileEntry(name={self.name}, dir={self.dir})"
-		
+
 		def content(self, f):
 			if not self.places:
 				raise self.DZFormatError('No file places available')
@@ -209,7 +211,7 @@ class DZReader():
 			ensure_dir(filename)
 			with open(filename, 'wb') as out_f:
 				out_f.write(self.content(f))
-	
+
 	class FilePlace():
 		TYPES = {256: 'normal', 8: 'gzip', 512: 'lzma'}
 
@@ -227,7 +229,7 @@ class DZReader():
 			self.offset = offset
 			self.length = length
 			self.type = self.TYPES.get(type_code, 'normal')
-		
+
 		def content(self, f):
 			f.seek(self.offset)
 			if self.type == 'normal':
@@ -307,13 +309,13 @@ class DZReader():
 			files[place.file_index].places.append(place)
 
 		self.file_entries = files
-	
+
 	def __enter__(self):
 		self.file_size = os.path.getsize(self.filename)
 		self.file = open(self.filename, 'rb')
 		self.parse()
 		return self
-	
+
 	def __exit__(self, exc_type, exc_value, traceback):
 		self.file.close()
 		if exc_type is not None:
@@ -331,7 +333,7 @@ class CZReader(DZReader):
 	def __init__(self, filename, keys):
 		super().__init__(filename)
 		self.keys = [key if type(key) == bytes else base64.b64decode(key) for key in keys]
-	
+
 	def decrypt(self):
 		with open(self.filename, 'rb') as f:
 			data = bytearray(f.read())
@@ -340,7 +342,7 @@ class CZReader(DZReader):
 				data[i] ^= key[i % len(key)]
 		self.file = io.BytesIO(data)
 		self.file_size = len(data)
-	
+
 	def __enter__(self):
 		self.decrypt()
 		self.parse()
@@ -353,12 +355,12 @@ class DZWriter():
 			self.index = index
 			self.path = path
 			self.file_indices = []
-		
+
 		def write_location_table(self, f):
 			for file_index in self.file_indices:
 				f.write(pack_int16(self.index, file_index))
 				f.write(b'\xff\xff')
-		
+
 		def null_terminated_path(self):
 			return self.path.replace('/', '\\').encode() + b'\x00'
 
@@ -369,7 +371,7 @@ class DZWriter():
 			self.path = path
 			self.name = name
 			self.offset_table_offset = 0
-		
+
 		def null_terminated_name(self):
 			return self.name.encode() + b'\x00'
 
@@ -413,7 +415,7 @@ class DZWriter():
 		# File locations
 		for dir_entry in self.dirs[1:]:
 			dir_entry.write_location_table(f)
-		
+
 		# Offsets
 		f.write(pack_int16(1, len(self.files)))
 		for file_entry in self.files:
@@ -427,12 +429,12 @@ class DZWriter():
 	def write_to_file(self, filename):
 		with open(filename, 'wb') as f:
 			self.write(f)
-	
+
 class CZWriter(DZWriter):
 	def __init__(self, path, keys):
 		super().__init__(path)
 		self.keys = [key if type(key) == bytes else base64.b64decode(key) for key in keys]
-	
+
 	def encrypt(self, data):
 		for key in self.keys:
 			for i in range(len(data)):

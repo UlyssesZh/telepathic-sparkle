@@ -1,6 +1,7 @@
-src
-dist
-cache
+src/[^.]*
+dist/[^.]*
+cache/[^.]*
 keystore.jks
 config.json
 guide.md
+dnsmasq.conf
