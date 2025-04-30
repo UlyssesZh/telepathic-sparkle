@@ -110,18 +110,6 @@ Charts and diagrams papered the walls like a mad scientist's lab.
 Spike did his best to help,
 but even he had to take snack breaks to survive the whirlwind of Twilight's study sessions.
 
-Twilight wrote letters to Princess Celestia, Sunburst, and Zecora,
-asking each for any knowledge about telepathic magic.
-Celestia replied graciously, admitting she knew very little beyond old theories,
-and Zecora replied with a cryptic rhyme:
-
-"A bridge unseen, a link unmade,<br>
-The thoughts of others must be weighed.<br>
-But tread with care, for minds are deep,<br>
-And secrets lost are hard to keep."
-
-Twilight appreciated Zecora's wisdom, though she wished the zebra had been a little less mysterious.
-
 They devoured every text they could find.
 Ancient spellbooks, psychological studies,
 even obscure scrolls from forgotten corners of the Canterlot Archives.
