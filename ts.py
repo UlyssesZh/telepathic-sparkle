@@ -480,9 +480,13 @@ class Server:
 
 	def __init__(self, conf):
 		self.archives = [self.Archive(options) for options in conf['archives']]
-		self.handled_host = conf['host']
+		self.handled_hosts = conf['host']
+		if type(self.handled_hosts) != list:
+			self.handled_hosts = [self.handled_hosts]
 		self.archives_base_url = conf['archives_base_url']
-		self.archive_list_filename = conf['archive_list_filename']
+		self.archive_list_filenames = conf['archive_list_filename']
+		if type(self.archive_list_filenames) != list:
+			self.archive_list_filenames = [self.archive_list_filenames]
 
 	def archive_list(self):
 		result = f'\n[Info]\nTotal={len(self.archives)}\n\n'
@@ -494,10 +498,16 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 	def do_GET(self):
 		parsed_url = urllib.parse.urlparse(self.path)
 		host = self.headers['Host']
-		if host != server.handled_host:
+		if host not in server.handled_hosts:
 			self.forward_request()
 			return
-		if parsed_url.path == os.path.join(server.archives_base_url, server.archive_list_filename):
+		if not parsed_url.path.startswith(server.archives_base_url):
+			self.send_response(http.HTTPStatus.NOT_FOUND)
+			self.end_headers()
+			self.wfile.write(b'404 Not Found')
+			return
+		url_path = parsed_url.path[len(server.archives_base_url)+1:]
+		if url_path in server.archive_list_filenames:
 			response_body = server.archive_list()
 			self.send_response(http.HTTPStatus.OK)
 			self.send_header('Content-Length', str(len(response_body)))
@@ -505,7 +515,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 			self.wfile.write(response_body)
 			return
 		for archive in server.archives:
-			if parsed_url.path == os.path.join(server.archives_base_url, archive.filename):
+			if url_path == archive.filename:
 				with open(archive.path, 'rb') as f:
 					response_body = f.read()
 				self.send_response(http.HTTPStatus.OK)
